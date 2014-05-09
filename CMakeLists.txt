@@ -110,6 +110,8 @@ set(HEADERS
   include/vmmlib/t4_hosvd.hpp
   include/vmmlib/t4_ttm.hpp
   include/vmmlib/tucker4_tensor.hpp
+  include/vmmlib/tensor.hpp
+  include/vmmlib/tensor_initializers.hpp
 )
 
 set(TESTS
@@ -129,6 +131,9 @@ set(TESTS
   tests/vector_test.cpp
   tests/util_test.cpp
   tests/vmmlib_unit_tests_main.cpp )
+
+set(PLAY
+  play/tensor_play.cpp )
 
 if(LAPACK_FOUND)
   add_definitions(-DVMMLIB_USE_LAPACK)
@@ -172,6 +177,15 @@ if(CBLAS_FOUND AND LAPACK_FOUND)
     tests/matrix_pseudoinverse_test.cpp
     tests/cp3_tensor_test.cpp )
 endif()
+
+add_executable(tensor_play ${HEADERS} ${PLAY})
+if(LAPACK_FOUND)
+  target_link_libraries(tensor_play ${LAPACK_LIBRARIES})
+endif()
+target_link_libraries(tensor_play -lblas -lcblas)
+#if(CBLAS_FOUND)
+#  target_link_libraries(tensor_play ${CBLAS_LIBRARIES})
+#endif()
 
 if(NOT MSVC)
   add_executable(vmmlib_test ${HEADERS} ${TESTS})
