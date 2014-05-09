@@ -80,7 +80,7 @@ void tensor<T>::set_memory(const T* memory) // TODO: make it cast from any type
 
 // Set the values to form an N-dimensional gaussian bell
 template< typename T>
-void tensor<T>::set_gaussian(double sigma1, double sigma2 = 0, double sigma3 = 0) // GENERIC (1-3D)
+void tensor<T>::set_gaussian(double sigma1, double sigma2, double sigma3) // GENERIC (1-3D)
 {
     if (sigma2 <= 0) sigma2 = sigma1;
     if (sigma3 <= 0) sigma3 = sigma1;
@@ -111,7 +111,8 @@ void tensor<T>::set_gaussian(double sigma1, double sigma2 = 0, double sigma3 = 0
 }
 
 // Approximation of the N-dimensional Laplacian operator
-void tensor::set_laplacian() // GENERIC (1-3D). After http://en.wikipedia.org/wiki/Discrete_Laplace_operator#Implementation_in_Image_Processing
+template< typename T>
+void tensor<T>::set_laplacian() // GENERIC (1-3D). After http://en.wikipedia.org/wiki/Discrete_Laplace_operator#Implementation_in_Image_Processing
 {
     for (size_t i = 0; i < n_dims; ++i)
     {
