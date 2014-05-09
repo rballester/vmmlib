@@ -112,6 +112,12 @@ set(HEADERS
   include/vmmlib/tucker4_tensor.hpp
   include/vmmlib/tensor.hpp
   include/vmmlib/tensor_initializers.hpp
+  include/vmmlib/tensor_accessors.hpp
+  include/vmmlib/tensor_scalar_operations.hpp
+  include/vmmlib/tensor_transformations.hpp
+  include/vmmlib/tensor_tensor_operations.hpp
+  include/vmmlib/tensor_io.hpp
+  include/vmmlib/tensor_properties.hpp
 )
 
 set(TESTS
@@ -182,10 +188,9 @@ add_executable(tensor_play ${HEADERS} ${PLAY})
 if(LAPACK_FOUND)
   target_link_libraries(tensor_play ${LAPACK_LIBRARIES})
 endif()
-target_link_libraries(tensor_play -lblas -lcblas)
-#if(CBLAS_FOUND)
-#  target_link_libraries(tensor_play ${CBLAS_LIBRARIES})
-#endif()
+if(CBLAS_FOUND)
+  target_link_libraries(tensor_play ${CBLAS_LIBRARIES})
+endif()
 
 if(NOT MSVC)
   add_executable(vmmlib_test ${HEADERS} ${TESTS})

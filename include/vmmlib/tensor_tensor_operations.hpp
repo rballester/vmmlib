@@ -10,8 +10,28 @@
 
 #include "tensor.hpp"
 
+#include <cblas.h>
+
 namespace vmml
 {
+    
+struct sgemm_params // Used for BLAS operations (matrix-matrix product)
+{
+    CBLAS_ORDER     order;
+    CBLAS_TRANSPOSE trans_a;
+    CBLAS_TRANSPOSE trans_b;
+    integer  		m;
+    integer 		n;
+    integer 		k;
+    float_t			alpha;
+    float_t*        a;
+    integer        lda; //leading dimension of input array matrix left
+    float_t*        b;
+    integer         ldb; //leading dimension of input array matrix right
+    float_t			beta;
+    float_t*        c;
+    integer        ldc; //leading dimension of output array matrix right
+};
     
 // Tensor-tensor convolution. The result has the same size as the original
 template< typename T>

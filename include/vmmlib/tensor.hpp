@@ -28,77 +28,10 @@
 #include <algorithm>
 #include <limits>
 
-#include "lapack/detail/f2c.h"
-#include "lapack/detail/clapack.h"
-#include <cblas.h>
-#include <fftw3.h>
-
 #include <omp.h>
-#undef min // Hack to undo the effects of some evil header (http://stackoverflow.com/questions/518517/macro-max-requires-2-arguments-but-only-1-given)
-#undef max
 
 namespace vmml
 {
- 
-struct sgemm_params // Used for BLAS operations (matrix-matrix product)
-{
-    CBLAS_ORDER     order;
-    CBLAS_TRANSPOSE trans_a;
-    CBLAS_TRANSPOSE trans_b;
-    integer  		m;
-    integer 		n;
-    integer 		k;
-    float_t			alpha;
-    float_t*        a;
-    integer        lda; //leading dimension of input array matrix left
-    float_t*        b;
-    integer         ldb; //leading dimension of input array matrix right
-    float_t			beta;
-    float_t*        c;
-    integer        ldc; //leading dimension of output array matrix right
-};
-    
-struct svd_params // Used for LAPACK operations on singular vectors
-{
-    char            jobu;
-    char            jobvt;
-    integer         m;
-    integer         n;
-    float_t*        a;
-    integer         lda;
-    float_t*        s;
-    float_t*        u;
-    integer         ldu;
-    float_t*        vt;
-    integer         ldvt;
-    float_t*        work;
-    integer         lwork;
-    integer         info;
-};
-
-struct eigs_params // Used for LAPACK operations on eigenvectors
-{
-    char            jobz;
-    char            range;
-    char            uplo;
-    integer         n;
-    float_t*        a;
-    integer         lda; //leading dimension of input array
-    float_t*        vl;
-    float_t*        vu;
-    integer         il;
-    integer         iu;
-    float_t         abstol;
-    integer         m; //number of found eigenvalues
-    float_t*        w; //first m eigenvalues
-    float_t*        z; //first m eigenvectors
-    integer         ldz; //leading dimension of z
-    float_t*        work;
-    integer         lwork;
-    integer*        iwork;
-    integer*        ifail;
-    integer         info;
-};
 
 template< typename T = float >
 class tensor
