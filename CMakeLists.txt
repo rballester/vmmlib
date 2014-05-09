@@ -110,6 +110,7 @@ set(HEADERS
   include/vmmlib/t4_hosvd.hpp
   include/vmmlib/t4_ttm.hpp
   include/vmmlib/tucker4_tensor.hpp
+  include/vmmlib/tensor_includes.hpp
   include/vmmlib/tensor.hpp
   include/vmmlib/tensor_initializers.hpp
   include/vmmlib/tensor_accessors.hpp
