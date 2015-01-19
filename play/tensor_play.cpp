@@ -51,6 +51,8 @@ int main (int argc, char * const argv[]) {
     
     std::cout << "The difference between original and reconstruction (Frobenius norm) is close to 0: norm of the approximation error = " 
             << (input-reconstruction).frobenius_norm() << std::endl;
+    std::cout << "The relative error of the approximation compared to the original is " 
+            << input.relative_error(reconstruction) << std::endl;
     
     std::cout << "We have performed lossless compression. Size comparison: original size = " 
             << input.get_size() << "; compressed size = " << core.get_size() + U1.get_size() + U2.get_size() + U3.get_size() << std::endl;

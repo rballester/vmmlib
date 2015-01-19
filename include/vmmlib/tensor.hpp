@@ -584,7 +584,7 @@ public:
         }
     }
     
-    // Linearly maps the values in the first range (values outside are treated like the closest interval end) into the second range
+    // Linearly maps the values in the first range (values outside are clamped, i.e. treated like the closest interval end) into the second range
     void map_histogram(T source_left, T source_right, T target_left, T target_right)
     {
         for (size_t counter = 0; counter < size; ++counter)
@@ -1632,7 +1632,7 @@ public:
         return sqrt(variance());
     }
     
-    // Returns matrix with one row per bin and 3 columns: bin start value, bin end value and bin count
+    // Returns matrix with one row per bin and 3 columns: bin start value, bin end value and bin count. step can be used to skip some elements if the tensor is huge
     tensor<float> histogram(int n_bins, size_t step = 1) const
     {
         tensor<float> result(n_bins,3);
