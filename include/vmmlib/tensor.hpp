@@ -1,5 +1,5 @@
 /* 
- * Author: rballester
+ * Author: Rafa Ballester
  *
  * Created on March 14, 2014, 10:43 AM
  */
@@ -7,7 +7,6 @@
 // TODO: make asserts optional
 // TODO: switch memcpy's to std::copy
 // TODO: split in several files
-// TODO: make a function out of the unfolding
 // TODO: make linear traversals (array[counter]) during scalar operations with OpenMP
 
 #ifndef TENSOR_HPP
