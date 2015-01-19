@@ -30,6 +30,7 @@
 #include <fcntl.h>
 #include <algorithm>
 #include <limits>
+#include <vector>
 
 #include <include/vmmlib/lapack/detail/f2c.h>
 #include <include/vmmlib/lapack/detail/clapack.h>
@@ -40,7 +41,9 @@
 #undef min // Hack to undo the effects of some evil header (http://stackoverflow.com/questions/518517/macro-max-requires-2-arguments-but-only-1-given)
 #undef max
 
-#define SAFE_ACCESSORS 0
+#ifndef SAFE_ACCESSORS
+    #define SAFE_ACCESSORS 0
+#endif
 
 namespace vmml
 {
@@ -615,6 +618,48 @@ public:
         return result;
     }
     
+    // Reshapes the tensor into the new dimensions new_sizes, with the given dimension order. Example: reshape({N,M},{2,1}) transposes a MxN matrix. This method is slower
+//    than directly writing the loops for the specific reshaping
+    tensor<T> reshape(std::vector<int> new_sizes, std::vector<int> dim_order) const // GENERIC (1-3D)
+    {
+        assert(new_sizes.size() >= 1);
+        assert(new_sizes.size() <= 3);
+        assert(dim_order.size() == n_dims);
+        size_t new_size = 1;
+        for (int i = 0; i < new_sizes.size(); ++i) {
+            assert(new_sizes[i] >= 1);
+            new_size *= new_sizes[i];
+        }
+        assert(new_size == size);
+        
+        while (new_sizes.size() < 3)
+            new_sizes.push_back(1);
+        while (dim_order.size() < 3)
+            dim_order.push_back(dim_order.size()+1);
+        
+        tensor<T> result;
+        result.init(new_sizes.size(),new_sizes[0],new_sizes[1],new_sizes[2]);
+
+        size_t counters[3];
+        T* dst = result.get_array();
+        size_t mult1 = d[(dim_order[0]-1)]*d[(dim_order[1]-1)];
+        size_t mult2 = d[(dim_order[0]-1)];
+        int pos1 = dim_order[2]-1;
+        int pos2 = dim_order[1]-1;
+        int pos3 = dim_order[0]-1;
+        for (size_t k = 0; k < d[2]; ++k) {
+            counters[2] = k;
+            for (size_t j = 0; j < d[1]; ++j) {
+                counters[1] = j;
+                for (size_t i = 0; i < d[0]; ++i) {
+                    counters[0] = i;
+                    dst[ mult1*counters[pos1] + mult2*counters[pos2] + counters[pos3] ] = at(i,j,k);
+                }
+            }
+        }
+        return result;
+    }
+    
     // Removes redundant dimensions. E.g. a tensor of size 1 x 4 x 1 x 6 will become 4 x 6
     void squeeze()
     {
@@ -835,8 +880,9 @@ public:
     template< typename TT >
     void cast_from(tensor<TT>& other) {
         
+        T* other_array = other.get_array();
         for( size_t counter = 0; counter < size; ++counter ) {
-            array[counter] = static_cast<T> (other.get_array()[counter]);
+            array[counter] = static_cast<T> (other_array[counter]);
         }
     }
 //        VMML_TEMPLATE_STRING
