@@ -110,15 +110,7 @@ set(HEADERS
   include/vmmlib/t4_hosvd.hpp
   include/vmmlib/t4_ttm.hpp
   include/vmmlib/tucker4_tensor.hpp
-  include/vmmlib/tensor_includes.hpp
   include/vmmlib/tensor.hpp
-  include/vmmlib/tensor_initializers.hpp
-  include/vmmlib/tensor_accessors.hpp
-  include/vmmlib/tensor_scalar_operations.hpp
-  include/vmmlib/tensor_transformations.hpp
-  include/vmmlib/tensor_tensor_operations.hpp
-  include/vmmlib/tensor_io.hpp
-  include/vmmlib/tensor_properties.hpp
 )
 
 set(TESTS
