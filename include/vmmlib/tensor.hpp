@@ -617,8 +617,8 @@ public:
         return result;
     }
     
-    // Reshapes the tensor into the new dimensions new_sizes, with the given dimension order. Example: reshape({N,M},{2,1}) transposes a MxN matrix. This method is slower
-//    than directly writing the loops for the specific reshaping
+    // Reshapes the tensor into the new dimensions new_sizes, with the given dimension order (dim_order). Example: reshape({N,M},{2,1}) transposes
+    // a MxN matrix. Warning: this method is very flexible, but slower than directly writing the loops for the specific desired reshaping
     tensor<T> reshape(std::vector<int> new_sizes, std::vector<int> dim_order) const // GENERIC (1-3D)
     {
         assert(new_sizes.size() >= 1);
