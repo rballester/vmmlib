@@ -166,8 +166,26 @@ public:
 
         T* other_array = other.get_array();
         for( size_t counter = 0; counter < size; ++counter ) {
-//            array[counter] = static_cast<T> (other_array[counter]);
             array[counter] = other_array[counter];
+        }
+    }
+    
+    template< typename TT >
+    tensor(const tensor<TT>& other) { // GENERIC (1-3D)
+        
+        n_dims = other.get_n_dims();
+        
+        for (int i = 0; i < n_dims; i++)
+            d[i] = other.get_dim(i);
+        for (int i = n_dims; i < 3; i++)
+            d[i] = 1;
+
+        size = other.get_size();
+        array = new T[other.get_size()];
+
+        TT* other_array = other.get_array();
+        for( size_t counter = 0; counter < size; ++counter ) {
+            array[counter] = static_cast<T> (other_array[counter]);
         }
     }
     
@@ -451,7 +469,7 @@ public:
         return true;
     }
     
-    const tensor<T>& operator=( const T scalar ) // TODO Can it be shortened using the copy constructor?
+    const tensor<T>& operator=( const T scalar )
     {
         for( size_t counter = 0; counter < size; ++counter )
         {
@@ -460,7 +478,7 @@ public:
         return *this;
     }
     
-    const tensor<T>& operator=( const tensor<T>& other) // TODO Can it be shortened using the copy constructor?
+    const tensor<T>& operator=( const tensor<T>& other) // TODO: do a version that can cast
     {
         assert(this != &other);
         n_dims = other.n_dims;
@@ -884,33 +902,6 @@ public:
             array[counter] = static_cast<T> (other_array[counter]);
         }
     }
-//        VMML_TEMPLATE_STRING
-//    template< typename TT >
-//    void
-//    VMML_TEMPLATE_CLASSNAME::cast_from(const tensor3< I1, I2, I3, TT >& other) {
-//#if 0
-//        typedef tensor3< I1, I2, I3, TT > t3_tt_type;
-//        typedef typename t3_tt_type::const_iterator tt_const_iterator;
-//
-//        iterator it = begin(), it_end = end();
-//        tt_const_iterator other_it = other.begin();
-//        for (; it != it_end; ++it, ++other_it) {
-//            *it = static_cast<T> (*other_it);
-//        }
-//#else
-//#pragma omp parallel for
-//        for (long slice_idx = 0; slice_idx < (long) I3; ++slice_idx) {
-//#pragma omp parallel for
-//            for (long row_index = 0; row_index < (long) I1; ++row_index) {
-//#pragma omp parallel for
-//                for (long col_index = 0; col_index < (long) I2; ++col_index) {
-//                    at(row_index, col_index, slice_idx) = static_cast<T> (other.at(row_index, col_index, slice_idx));
-//                }
-//            }
-//        }
-//
-//#endif
-//    }
     
     // Returns the Summed Area Table (every point is the integral on the rectangular region defined by that point and the origin). Used e.g. to quickly compute histograms
     tensor<T> summed_area_table() const // GENERIC (1-3D)
@@ -1240,8 +1231,8 @@ public:
 		p.ldc        = d[0];
         
         // blas needs non-const data
-        tensor<T> A_copy(*this);
-        tensor<T> B_copy(factor);
+        tensor<float_t> A_copy(*this);
+        tensor<float_t> B_copy(factor);
 		
 		p.a         = A_copy.get_array();
 		p.b         = B_copy.get_array();
@@ -1277,7 +1268,7 @@ public:
 		p.ldc        = d[0];
         
         // blas needs non-const data
-        tensor<T> A_copy(*this);
+        tensor<float_t> A_copy(*this);
 		
 		p.a         = A_copy.get_array();
 		p.b         = A_copy.get_array();
