@@ -1,5 +1,5 @@
 /* 
- * Author: Rafa Ballester
+ * Author: rballester
  *
  * Created on March 14, 2014, 10:43 AM
  */
@@ -7,6 +7,7 @@
 // TODO: make asserts optional
 // TODO: switch memcpy's to std::copy
 // TODO: split in several files
+// TODO: make a function out of the unfolding
 // TODO: make linear traversals (array[counter]) during scalar operations with OpenMP
 
 #ifndef TENSOR_HPP
@@ -29,10 +30,9 @@
 #include <fcntl.h>
 #include <algorithm>
 #include <limits>
-#include <vector>
 
-#include <include/vmmlib/lapack/detail/f2c.h>
-#include <include/vmmlib/lapack/detail/clapack.h>
+#include <lapack/f2c.h>
+#include <lapack/clapack.h>
 #include <cblas.h>
 #include <fftw3.h>
 
@@ -40,9 +40,7 @@
 #undef min // Hack to undo the effects of some evil header (http://stackoverflow.com/questions/518517/macro-max-requires-2-arguments-but-only-1-given)
 #undef max
 
-#ifndef SAFE_ACCESSORS
-    #define SAFE_ACCESSORS 0
-#endif
+#define SAFE_ACCESSORS 0
 
 namespace vmml
 {
@@ -56,7 +54,7 @@ struct sgemm_params // Used for BLAS operations (matrix-matrix product)
     integer 		n;
     integer 		k;
     float_t			alpha;
-    const float_t*        a;
+    float_t*        a;
     integer        lda; //leading dimension of input array matrix left
     float_t*        b;
     integer         ldb; //leading dimension of input array matrix right
@@ -71,14 +69,14 @@ struct svd_params // Used for LAPACK operations on singular vectors
     char            jobvt;
     integer         m;
     integer         n;
-    real*           a;
+    float_t*        a;
     integer         lda;
-    real*           s;
-    real*           u;
+    float_t*        s;
+    float_t*        u;
     integer         ldu;
-    real*           vt;
+    float_t*        vt;
     integer         ldvt;
-    real*           work;
+    float_t*        work;
     integer         lwork;
     integer         info;
 };
@@ -89,18 +87,18 @@ struct eigs_params // Used for LAPACK operations on eigenvectors
     char            range;
     char            uplo;
     integer         n;
-    real*           a;
+    float_t*        a;
     integer         lda; //leading dimension of input array
-    real*           vl;
-    real*           vu;
+    float_t*        vl;
+    float_t*        vu;
     integer         il;
     integer         iu;
-    real            abstol;
+    float_t         abstol;
     integer         m; //number of found eigenvalues
-    real*           w; //first m eigenvalues
-    real*           z; //first m eigenvectors
+    float_t*        w; //first m eigenvalues
+    float_t*        z; //first m eigenvectors
     integer         ldz; //leading dimension of z
-    real*           work;
+    float_t*        work;
     integer         lwork;
     integer*        iwork;
     integer*        ifail;
@@ -166,26 +164,8 @@ public:
 
         T* other_array = other.get_array();
         for( size_t counter = 0; counter < size; ++counter ) {
+//            array[counter] = static_cast<T> (other_array[counter]);
             array[counter] = other_array[counter];
-        }
-    }
-    
-    template< typename TT >
-    tensor(const tensor<TT>& other) { // GENERIC (1-3D)
-        
-        n_dims = other.get_n_dims();
-        
-        for (int i = 0; i < n_dims; i++)
-            d[i] = other.get_dim(i);
-        for (int i = n_dims; i < 3; i++)
-            d[i] = 1;
-
-        size = other.get_size();
-        array = new T[other.get_size()];
-
-        TT* other_array = other.get_array();
-        for( size_t counter = 0; counter < size; ++counter ) {
-            array[counter] = static_cast<T> (other_array[counter]);
         }
     }
     
@@ -469,7 +449,7 @@ public:
         return true;
     }
     
-    const tensor<T>& operator=( const T scalar )
+    const tensor<T>& operator=( const T scalar ) // TODO Can it be shortened using the copy constructor?
     {
         for( size_t counter = 0; counter < size; ++counter )
         {
@@ -478,7 +458,7 @@ public:
         return *this;
     }
     
-    const tensor<T>& operator=( const tensor<T>& other) // TODO: do a version that can cast
+    const tensor<T>& operator=( const tensor<T>& other) // TODO Can it be shortened using the copy constructor?
     {
         assert(this != &other);
         n_dims = other.n_dims;
@@ -602,7 +582,7 @@ public:
         }
     }
     
-    // Linearly maps the values in the first range (values outside are clamped, i.e. treated like the closest interval end) into the second range
+    // Linearly maps the values in the first range (values outside are treated like the closest interval end) into the second range
     void map_histogram(T source_left, T source_right, T target_left, T target_right)
     {
         for (size_t counter = 0; counter < size; ++counter)
@@ -630,48 +610,6 @@ public:
             for( size_t col = 0; col < d[1]; ++col )
             {
                 result.at(col,row) = at(row,col);
-            }
-        }
-        return result;
-    }
-    
-    // Reshapes the tensor into the new dimensions new_sizes, with the given dimension order (dim_order). Example: reshape({N,M},{2,1}) transposes
-    // a MxN matrix. Warning: this method is very flexible, but slower than directly writing the loops for the specific desired reshaping
-    tensor<T> reshape(std::vector<int> new_sizes, std::vector<int> dim_order) const // GENERIC (1-3D)
-    {
-        assert(new_sizes.size() >= 1);
-        assert(new_sizes.size() <= 3);
-        assert(dim_order.size() == n_dims);
-        size_t new_size = 1;
-        for (int i = 0; i < new_sizes.size(); ++i) {
-            assert(new_sizes[i] >= 1);
-            new_size *= new_sizes[i];
-        }
-        assert(new_size == size);
-        
-        while (new_sizes.size() < 3)
-            new_sizes.push_back(1);
-        while (dim_order.size() < 3)
-            dim_order.push_back(dim_order.size()+1);
-        
-        tensor<T> result;
-        result.init(new_sizes.size(),new_sizes[0],new_sizes[1],new_sizes[2]);
-
-        size_t counters[3];
-        T* dst = result.get_array();
-        size_t mult1 = d[(dim_order[0]-1)]*d[(dim_order[1]-1)];
-        size_t mult2 = d[(dim_order[0]-1)];
-        int pos1 = dim_order[2]-1;
-        int pos2 = dim_order[1]-1;
-        int pos3 = dim_order[0]-1;
-        for (size_t k = 0; k < d[2]; ++k) {
-            counters[2] = k;
-            for (size_t j = 0; j < d[1]; ++j) {
-                counters[1] = j;
-                for (size_t i = 0; i < d[0]; ++i) {
-                    counters[0] = i;
-                    dst[ mult1*counters[pos1] + mult2*counters[pos2] + counters[pos3] ] = at(i,j,k);
-                }
             }
         }
         return result;
@@ -897,11 +835,37 @@ public:
     template< typename TT >
     void cast_from(tensor<TT>& other) {
         
-        T* other_array = other.get_array();
         for( size_t counter = 0; counter < size; ++counter ) {
-            array[counter] = static_cast<T> (other_array[counter]);
+            array[counter] = static_cast<T> (other.get_array()[counter]);
         }
     }
+//        VMML_TEMPLATE_STRING
+//    template< typename TT >
+//    void
+//    VMML_TEMPLATE_CLASSNAME::cast_from(const tensor3< I1, I2, I3, TT >& other) {
+//#if 0
+//        typedef tensor3< I1, I2, I3, TT > t3_tt_type;
+//        typedef typename t3_tt_type::const_iterator tt_const_iterator;
+//
+//        iterator it = begin(), it_end = end();
+//        tt_const_iterator other_it = other.begin();
+//        for (; it != it_end; ++it, ++other_it) {
+//            *it = static_cast<T> (*other_it);
+//        }
+//#else
+//#pragma omp parallel for
+//        for (long slice_idx = 0; slice_idx < (long) I3; ++slice_idx) {
+//#pragma omp parallel for
+//            for (long row_index = 0; row_index < (long) I1; ++row_index) {
+//#pragma omp parallel for
+//                for (long col_index = 0; col_index < (long) I2; ++col_index) {
+//                    at(row_index, col_index, slice_idx) = static_cast<T> (other.at(row_index, col_index, slice_idx));
+//                }
+//            }
+//        }
+//
+//#endif
+//    }
     
     // Returns the Summed Area Table (every point is the integral on the rectangular region defined by that point and the origin). Used e.g. to quickly compute histograms
     tensor<T> summed_area_table() const // GENERIC (1-3D)
@@ -1205,13 +1169,13 @@ public:
     }
     
     // Regular matrix times matrix product. Also vectors are supported
-    tensor<float_t> mtm(const tensor<T>& factor) const
+    tensor<T> mtm(const tensor<T>& factor) const
     {
         assert(n_dims <= 2);
         assert(factor.n_dims <= 2);
         assert(d[1] == factor.d[0]);
         
-        tensor<float_t> result(d[0],factor.d[1]);
+        tensor<T> result(d[0],factor.d[1]);
         
         sgemm_params p;
         
@@ -1231,8 +1195,8 @@ public:
 		p.ldc        = d[0];
         
         // blas needs non-const data
-        tensor<float_t> A_copy(*this);
-        tensor<float_t> B_copy(factor);
+        tensor<T> A_copy(*this);
+        tensor<T> B_copy(factor);
 		
 		p.a         = A_copy.get_array();
 		p.b         = B_copy.get_array();
@@ -1244,11 +1208,11 @@ public:
     }
     
     // Returns A*A^T
-    tensor<float_t> covariance() const
+    tensor<T> covariance() const
     {
         assert(n_dims == 2);
         
-        tensor<float_t> result(d[0],d[0]);
+        tensor<T> result(d[0],d[0]);
         
         sgemm_params p;
         
@@ -1268,7 +1232,7 @@ public:
 		p.ldc        = d[0];
         
         // blas needs non-const data
-        tensor<float_t> A_copy(*this);
+        tensor<T> A_copy(*this);
 		
 		p.a         = A_copy.get_array();
 		p.b         = A_copy.get_array();
@@ -1623,7 +1587,7 @@ public:
         return sqrt(variance());
     }
     
-    // Returns matrix with one row per bin and 3 columns: bin start value, bin end value and bin count. step can be used to skip some elements if the tensor is huge
+    // Returns matrix with one row per bin and 3 columns: bin start value, bin end value and bin count
     tensor<float> histogram(int n_bins, size_t step = 1) const
     {
         tensor<float> result(n_bins,3);

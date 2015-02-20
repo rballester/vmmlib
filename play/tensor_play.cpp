@@ -60,7 +60,6 @@ int main (int argc, char * const argv[]) {
     std::cout << std::endl;
     
     std::cout << "You can reshape tensors with the method reshape()" << std::endl;
-    std::cout << "Example: reshape({N,M},{2,1}) transposes a MxN matrix (this call requires C++11). reshape() is slower than transpose(), but way more flexible" << std::endl;
+    std::cout << "Example: reshape({N,M},{2,1}) transposes a MxN matrix (this call requires C++11). reshape() is slower than transpose(), but way more flexible than directly writing the loops for the specific reshaping" << std::endl;
     
-//    than directly writing the loops for the specific reshaping
 }
